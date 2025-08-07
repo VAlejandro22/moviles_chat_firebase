@@ -150,7 +150,7 @@ class _ChatViewState extends State<ChatView> {
           child: Dismissible(
             key: Key(mensaje.id ?? mensaje.timestamp.toString()),
             direction: isOwn ? DismissDirection.endToStart : DismissDirection.none,
-            onDismissed: isOwn ? (_) => _deleteMessage(mensaje) : null,
+            confirmDismiss: isOwn ? (_) => _confirmDeleteMessage(mensaje) : null,
             background: Container(
               color: Colors.red,
               alignment: Alignment.centerRight,
@@ -412,5 +412,45 @@ class _ChatViewState extends State<ChatView> {
         });
       }
     }
+  }
+
+  Future<bool?> _confirmDeleteMessage(Mensaje mensaje) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar mensaje'),
+        content: const Text('¿Estás seguro de que quieres eliminar este mensaje?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (mensaje.id != null) {
+                try {
+                  await _firebaseService.eliminarMensaje(widget.chatId, mensaje.id!);
+                  Navigator.pop(context, true);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Mensaje eliminado')),
+                  );
+                } catch (e) {
+                  Navigator.pop(context, false);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error eliminando mensaje: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              } else {
+                Navigator.pop(context, false);
+              }
+            },
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
   }
 }
